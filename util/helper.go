@@ -35,18 +35,18 @@ func SearchWord(word string) string {
 	err = json.Unmarshal(valuebyte, &Dyc)
 
 	if err != nil {
-		fmt.Sprint(MarshallError)
+		return fmt.Sprint(MarshallError)
 	}
 
 	for i, _ := range string(valuebyte) {
 		strconv.Itoa(int(valuebyte[i]))
-		i++
+		
 		// fmt.Print(type(i))
 		// fmt.Println(types.)
 	}
 	// fmt.Print(Dyc)
 
-	fmt.Print(string(valuebyte[:3]))
+	// fmt.Print(string(valuebyte[:3]))
 
 	fmt.Print(reflect.ValueOf(Dyc).Len())
 	map1 := Dyc.(map[string]interface{})

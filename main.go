@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	// "unicod
-	 ed  "utill"
+	// ed "util"
+
+	 ed "workspace/dictionaryAPIGrpc/util"
 )
 
 type dyc interface{}
@@ -36,58 +37,60 @@ type Dictionary struct {
 
 type search interface{}
 
-var Dyc interface{}
+// var Dyc interface{}
 
 func main() {
+	eer := ed.SearchWord("god")
 
-	result := ed.SearchWord("god")
-
-	fmt.Print(result)
-
-	// 	if err != nil {
-	// 		fmt.Println("in marshalling error")
-	// 	}
-
-	// 	jsonfile, err := os.Open("dictionary.json")
-
-	// 	if err != nil {
-	// 		fmt.Println(err.Error())
-
-	// 	}
-
-	// 	fmt.Print("successfully opened")
-
-	// 	valuebyte, _ := ioutil.ReadAll(jsonfile)
-
-	// 	err = json.Unmarshal(valuebyte, &Dyc)
-
-	// 	for i, _ := range string(valuebyte) {
-	// 		strconv.Itoa(int(valuebyte[i]))
-	// 		i++
-	// 		// fmt.Print(type(i))
-	// 		// fmt.Println(types.)
-	// 	}
-	// 	// fmt.Print(Dyc)
-
-	// 	fmt.Print(string(valuebyte[:3]))
-
-	// 	fmt.Print(reflect.ValueOf(Dyc).Len())
-	//   map1 := Dyc.(map[string] interface{})
-
-	// 	fmt.Println(map1["okay"])
-
-	// 	// if Dyc.Kind() == reflect.Map{
-
-	// 	// }
-
-	// 	//  fmt.Print( string(valuebyte[]))
-	// 	// EnterWord()
-
-	// 	Meaning["hello"] = "greetings human way"
-	// 	Meaning["hammer"] = "tool for nailing into a device"
-	// 	Meaning["James"] = "human name"
-	// 	Meaning["computer"] = "electronice device that processes data"
+	fmt.Print(eer)
+	// fmt.Print(searchWord("Ok"))
 }
+
+//   fmt.Print(result)
+
+// 	if err != nil {
+// 		fmt.Println("in marshalling error")
+// 	}
+
+// 	jsonfile, err := os.Open("dictionary.json")
+
+// 	if err != nil {
+// 		fmt.Println(err.Error())
+
+// 	}
+
+// 	fmt.Print("successfully opened")
+
+// 	valuebyte, _ := ioutil.ReadAll(jsonfile)
+
+// 	err = json.Unmarshal(valuebyte, &Dyc)
+
+// 	for i, _ := range string(valuebyte) {
+// 		strconv.Itoa(int(valuebyte[i]))
+// 		i++
+// 		// fmt.Print(type(i))
+// 		// fmt.Println(types.)
+// 	}
+// 	// fmt.Print(Dyc)
+
+// 	fmt.Print(string(valuebyte[:3]))
+
+// 	fmt.Print(reflect.ValueOf(Dyc).Len())
+//   map1 := Dyc.(map[string] interface{})
+
+// 	fmt.Println(map1["okay"])
+
+// 	// if Dyc.Kind() == reflect.Map{
+
+// 	// }
+
+// 	//  fmt.Print( string(valuebyte[]))
+// 	// EnterWord()
+
+// 	Meaning["hello"] = "greetings human way"
+// 	Meaning["hammer"] = "tool for nailing into a device"
+// 	Meaning["James"] = "human name"
+// 	Meaning["computer"] = "electronice device that processes data"
 
 // Take a slice of keys, say band names that are similar
 // http://www.tonedeaf.com.au/412720/38-bands-annoyingly-similar-names.htm
