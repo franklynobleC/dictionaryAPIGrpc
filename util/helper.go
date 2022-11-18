@@ -7,19 +7,30 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"strconv"
+	"strings"
 )
 
 var (
 	MarshallError = errors.New("error decoding dictionary")
+	WordNotFound  = errors.New("keyword not found, try another key word")
+	EnterKeyWord  = errors.New("enter a keyword")
 )
+
+//TODO: remove debug errors in this package
 
 type Dyc interface{}
 
 //TODO: Add errors if words not found
 
-func SearchWord(word string) string {
-	var Dyc interface{}
+func SearchWord(word string) (string, error) {
+
+	word = strings.TrimSpace(strings.ToLower(word))
+
+	if len(word) == 0 {
+		return "", EnterKeyWord
+	}
+
+	var Dyc map[string]string
 
 	jsonfile, err := os.Open("dictionary.json")
 
@@ -35,27 +46,18 @@ func SearchWord(word string) string {
 	err = json.Unmarshal(valuebyte, &Dyc)
 
 	if err != nil {
-		return fmt.Sprint(MarshallError)
+		return "", MarshallError
 	}
-
-	for i, _ := range string(valuebyte) {
-		strconv.Itoa(int(valuebyte[i]))
-		
-		// fmt.Print(type(i))
-		// fmt.Println(types.)
-	}
-	// fmt.Print(Dyc)
-
-	// fmt.Print(string(valuebyte[:3]))
 
 	fmt.Print(reflect.ValueOf(Dyc).Len())
-	map1 := Dyc.(map[string]interface{})
 
-	return fmt.Sprint(map1[word])
-
-	// if Dyc.Kind() == reflect.Map{
-
-	// }
+	_, kePresent := Dyc[word]
+	if kePresent {
+		fmt.Println(kePresent)
+		return Dyc[word], nil
+	} else {
+		return "", WordNotFound
+	}
 
 	//  fmt.Print( string(valuebyte[]))
 
