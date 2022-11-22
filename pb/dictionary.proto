@@ -1,1 +1,16 @@
-   
+  syntax = "proto3";
+
+option go_package = "github.com/franklynobleC/dictionaryAPIGrpc/service";
+
+
+  service englishDictionary{
+    rpc searchWords(GetWords)returns (ReturnWords) {}
+
+  }
+
+  message GetWords{
+    string words = 1; 
+  }
+  message ReturnWords {
+    string words = 2;
+  }
