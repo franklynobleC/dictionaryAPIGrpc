@@ -7,7 +7,7 @@ import (
 	"sync"
 	// ed "util"
 
-	 ed "workspace/dictionaryAPIGrpc/util"
+	 ed "github.com/franklynobleC/dictionaryAPIGrpc/util"
 )
 
 type dyc interface{}

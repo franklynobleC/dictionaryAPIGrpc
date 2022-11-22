@@ -35,7 +35,7 @@ func NewEnglishDictionaryClient(cc grpc.ClientConnInterface) EnglishDictionaryCl
 
 func (c *englishDictionaryClient) SearchWords(ctx context.Context, in *GetWords, opts ...grpc.CallOption) (*ReturnWords, error) {
 	out := new(ReturnWords)
-	err := c.cc.Invoke(ctx, "/englishDictionary/searchWords", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pb.englishDictionary/searchWords", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _EnglishDictionary_SearchWords_Handler(srv interface{}, ctx context.Context
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/englishDictionary/searchWords",
+		FullMethod: "/pb.englishDictionary/searchWords",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EnglishDictionaryServer).SearchWords(ctx, req.(*GetWords))
@@ -92,7 +92,7 @@ func _EnglishDictionary_SearchWords_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var EnglishDictionary_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "englishDictionary",
+	ServiceName: "pb.englishDictionary",
 	HandlerType: (*EnglishDictionaryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

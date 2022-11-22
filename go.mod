@@ -1,4 +1,4 @@
-module workspace/dictionaryAPIGrpc
+module github.com/franklynobleC/dictionaryAPIGrpc
 
 go 1.18
 
