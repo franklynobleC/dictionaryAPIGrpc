@@ -6,4 +6,6 @@ import service "github.com/franklynobleC/dictionaryAPIGrpc/pb"
 
 type server struct {
 	service.UnimplementedEnglishDictionaryServer
-}
+    service service.Repository
+	
+	}  
