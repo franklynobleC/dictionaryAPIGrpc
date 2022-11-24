@@ -6,13 +6,13 @@ option go_package = "github.com/franklynobleC/dictionaryAPIGrpc/service";
 
 
   service englishDictionary{
-    rpc searchWords(GetWords)returns (ReturnWords) {}
+    rpc searchWords(Wordrequest)returns (WordResponse) {}
 
   }
 
-  message GetWords{
-    string words = 1; 
+  message Wordrequest{
+    string word = 1; 
   }
-  message ReturnWords {
+  message WordResponse {
     string words = 2;
   }

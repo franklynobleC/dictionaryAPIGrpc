@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EnglishDictionaryClient interface {
-	SearchWords(ctx context.Context, in *GetWords, opts ...grpc.CallOption) (*ReturnWords, error)
+	SearchWords(ctx context.Context, in *Wordrequest, opts ...grpc.CallOption) (*WordResponse, error)
 }
 
 type englishDictionaryClient struct {
@@ -33,8 +33,8 @@ func NewEnglishDictionaryClient(cc grpc.ClientConnInterface) EnglishDictionaryCl
 	return &englishDictionaryClient{cc}
 }
 
-func (c *englishDictionaryClient) SearchWords(ctx context.Context, in *GetWords, opts ...grpc.CallOption) (*ReturnWords, error) {
-	out := new(ReturnWords)
+func (c *englishDictionaryClient) SearchWords(ctx context.Context, in *Wordrequest, opts ...grpc.CallOption) (*WordResponse, error) {
+	out := new(WordResponse)
 	err := c.cc.Invoke(ctx, "/pb.englishDictionary/searchWords", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (c *englishDictionaryClient) SearchWords(ctx context.Context, in *GetWords,
 // All implementations must embed UnimplementedEnglishDictionaryServer
 // for forward compatibility
 type EnglishDictionaryServer interface {
-	SearchWords(context.Context, *GetWords) (*ReturnWords, error)
+	SearchWords(context.Context, *Wordrequest) (*WordResponse, error)
 	mustEmbedUnimplementedEnglishDictionaryServer()
 }
 
@@ -54,7 +54,7 @@ type EnglishDictionaryServer interface {
 type UnimplementedEnglishDictionaryServer struct {
 }
 
-func (UnimplementedEnglishDictionaryServer) SearchWords(context.Context, *GetWords) (*ReturnWords, error) {
+func (UnimplementedEnglishDictionaryServer) SearchWords(context.Context, *Wordrequest) (*WordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchWords not implemented")
 }
 func (UnimplementedEnglishDictionaryServer) mustEmbedUnimplementedEnglishDictionaryServer() {}
@@ -71,7 +71,7 @@ func RegisterEnglishDictionaryServer(s grpc.ServiceRegistrar, srv EnglishDiction
 }
 
 func _EnglishDictionary_SearchWords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetWords)
+	in := new(Wordrequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func _EnglishDictionary_SearchWords_Handler(srv interface{}, ctx context.Context
 		FullMethod: "/pb.englishDictionary/searchWords",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EnglishDictionaryServer).SearchWords(ctx, req.(*GetWords))
+		return srv.(EnglishDictionaryServer).SearchWords(ctx, req.(*Wordrequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
