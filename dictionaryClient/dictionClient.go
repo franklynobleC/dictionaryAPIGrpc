@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	defaultword = "world"
+	defaultword = "man"
 )
 
 var (
 	addr = flag.String("add", "localhost:5000", "address to connect to")
-	word = flag.String("word", defaultword, "word to search for")
+	Word = flag.String("word", "man", "word to search for")
 )
 
 func main() {
@@ -40,10 +40,10 @@ func main() {
 
      defer cancel()
     r, err := c.SearchWords(ctx, &pb.Wordrequest{
-		Word: *word,
+		Word: *Word,
 	})  
 	if  err != nil {
-		log.Fatalf("could not search word: %v", err)
+		log.Fatalf("could not search word: %v", err.Error())
 	}
 	log.Printf("word meaning:%s", r.GetWords())
 

@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 
+	//  util "github.com/franklynobleC/dictionaryAPIGrpc/util"
 	pb "github.com/franklynobleC/dictionaryAPIGrpc/pb"
 	"google.golang.org/grpc"
 )
@@ -50,15 +51,18 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 	words := &pb.Wordrequest{
 		Word: string(word.GetWord()),
 	}
+	fmt.Print(words, "1st")
 
-	word1 := strings.TrimSpace(strings.ToLower(words.String()))
+	strings.TrimSpace(strings.ToLower(words.GetWord()))
+	fmt.Print(words, "2nd")
 
-	if len(word1) == 0 {
+	if len(words.GetWord()) == 0 {
 
 		return &pb.WordResponse{
 			Words: EmptyString.Error(),
 		}, EnterKeyWord
 	}
+	fmt.Print("before opening", words.GetWord())
 
 	var Dyc map[string]string
 
@@ -83,14 +87,16 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 
 	fmt.Print(reflect.ValueOf(Dyc).Len())
 
-	_, kePresent := Dyc[word1]
+	_, kePresent := Dyc[words.GetWord()]
 	if kePresent {
-		fmt.Println(kePresent)
+		fmt.Println(kePresent, "key present")
 
-		wd := &pb.WordResponse{
-			Words: fmt.Sprint(Dyc[word1]),
-		}
-		return wd, nil
+		// wd := &pb.WordResponse{
+		// 	Words: fmt.Sprint(Dyc[word1]),
+		// }
+		return &pb.WordResponse{
+			Words: Dyc[word.GetWord()],
+		}, nil
 	} else {
 		return &pb.WordResponse{
 			Words: string(""),
@@ -102,20 +108,20 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 }
 
 func main() {
-	flag.Parse() 
+	flag.Parse()
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
-   if err != nil {
-	 fmt.Printf("errors %v failed to liten in port %v",err, *port)
-   }
+	if err != nil {
+		fmt.Printf("errors %v failed to liten in port %v", err, *port)
+	}
 
-   serv := grpc.NewServer()
+	serv := grpc.NewServer()
 
-   pb.RegisterEnglishDictionaryServer(serv, &server{})
-   log.Printf("server listening at %v", listen.Addr())
+	pb.RegisterEnglishDictionaryServer(serv, &server{})
+	log.Printf("server listening at %v", listen.Addr())
 
-     if err := serv.Serve(listen); err != nil {
+	if err := serv.Serve(listen); err != nil {
 		log.Fatalf("failed to Serve %v", err)
-	 }
+	}
 
 }
