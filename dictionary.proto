@@ -1,0 +1,26 @@
+  syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "google/api/http.proto";
+
+ option go_package = "github.com/franklynobleC/dictionaryAPIGrpc/service";
+
+
+  service  EnglishDictionaryService{
+    rpc EnglishDictionarySearchWord(EnglishDictionarySearchWordRequest)returns (EnglishDictionarySearchWordResponse) { 
+      option (google.api.http) = {
+        get:"/v1/englishDictionarySearchWord/{word}" 
+        
+      };
+    
+    }
+  }
+
+  message EnglishDictionarySearchWordRequest{
+    string word = 1; 
+  }
+  message EnglishDictionarySearchWordResponse {
+    string words = 2;
+  }

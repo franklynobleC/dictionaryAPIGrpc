@@ -7,7 +7,7 @@ import (
 	"time"
 
 	// "github.com/apache/pulsar-client-go/integration-tests/pb"
-	pb "github.com/franklynobleC/dictionaryAPIGrpc/pb"
+	se "github.com/franklynobleC/dictionaryAPIGrpc/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -34,15 +34,15 @@ func main() {
 
 	defer conn.Close()
 
-	c := pb.NewEnglishDictionaryClient(conn)
-   //contact the server and  print out its response
-   ctx, cancel := context.WithTimeout(context.Background(), time.Second)  
+	c := se.NewEnglishDictionaryServiceClient(conn)
+	//contact the server and  print out its response
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
-     defer cancel()
-    r, err := c.SearchWords(ctx, &pb.Wordrequest{
+	defer cancel()
+	r, err := c.EnglishDictionarySearchWord(ctx, &se.EnglishDictionarySearchWordRequest{
 		Word: *Word,
-	})  
-	if  err != nil {
+	})
+	if err != nil {
 		log.Fatalf("could not search word: %v", err.Error())
 	}
 	log.Printf("word meaning:%s", r.GetWords())

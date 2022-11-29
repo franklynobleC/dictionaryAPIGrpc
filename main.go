@@ -69,7 +69,7 @@ func findWords(word string) (string, error) {
 
 			return Meaning[word], nil
 
-			return val, nil
+			// return val, nil
 
 		}
 

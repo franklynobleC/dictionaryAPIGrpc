@@ -9,13 +9,24 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"reflect"
+	// "runtime"
 	"strings"
 
+	// "github.com/gin-gonic/gin"
+	// "github.com/go-playground/locales/sv"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/nats-io/nats.go"
+	// "google.golang.org/grpc"
+	// "google.golang.org/grpc/credentials/insecure"
+	// "github.com/onsi/ginkgo/config"
+	// "golang.org/x/net/http2"
+	// "golang.org/x/net/http2/h2c"
 	//  util "github.com/franklynobleC/dictionaryAPIGrpc/util"
-	pb "github.com/franklynobleC/dictionaryAPIGrpc/pb"
-	"google.golang.org/grpc"
+	se "github.com/franklynobleC/dictionaryAPIGrpc/proto"
+	// s"github.com/franklynobleC/dictionaryAPIGrpc/proto/pb"google.golang.org/grpc"
 )
 
 // import "google.golang.org/genproto/googleapis/cloud/orchestration/airflow/service/v1"
@@ -30,25 +41,35 @@ var (
 	EmptyString      = errors.New("")
 )
 
+const (
+	StreamName = "AllWORDS"
+	// StreamSubject = "WORDS*"
+)
+
+// var word string
+
 var (
-	port = flag.Int("port", 5000, "Server port")
+	port = flag.Int("port", 8082, "Server port")
 )
 
 type Dyc interface{}
 
 type server struct {
-	pb.UnimplementedEnglishDictionaryServer
+	se.UnimplementedEnglishDictionaryServiceServer
+	jt nats.JetStreamContext
+	// net.Listener
 	// service pb.Repository
 }
 
-// func (serv *server)returnWords (*service.ReturnWords, error) {
+func NewServer() *server {
+	return &server{}
+}
 
-// }
+func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.EnglishDictionarySearchWordRequest) (*se.EnglishDictionarySearchWordResponse, error) {
 
-func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.WordResponse, error) {
-
+	// dd := &serv.Publish(StreamName, []byte(word.Word))
 	// log.Println("receivedwords: %v")
-	words := &pb.Wordrequest{
+	words := &se.EnglishDictionarySearchWordRequest{
 		Word: string(word.GetWord()),
 	}
 	fmt.Print(words, "1st")
@@ -58,7 +79,7 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 
 	if len(words.GetWord()) == 0 {
 
-		return &pb.WordResponse{
+		return &se.EnglishDictionarySearchWordResponse{
 			Words: EmptyString.Error(),
 		}, EnterKeyWord
 	}
@@ -80,25 +101,45 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 	err = json.Unmarshal(valuebyte, &Dyc)
 
 	if err != nil {
-		return &pb.WordResponse{
+		return &se.EnglishDictionarySearchWordResponse{
 			Words: fmt.Sprint(Dyc[EmptyString.Error()]),
 		}, MarshallError
 	}
 
 	fmt.Print(reflect.ValueOf(Dyc).Len())
 
+     //TODO: FOR NATS PUBLISHING
+
+
+	jst, err := JetStreamInit()
+      if err != nil {
+		log.Fatal("cant connect to nats ", err.Error())
+	  }
+	 
+	err = CreateStream(jst)
+	if err != nil {
+		log.Fatal("cant create sttream ", err.Error())
+	}
+
+	defer consumeWords(jst)
+
 	_, kePresent := Dyc[words.GetWord()]
+	
+	
+
 	if kePresent {
 		fmt.Println(kePresent, "key present")
+		//Publish(StreamName, []byte(Dyc[word.GetWord()]))
+		// ExampleJetStream(  Dyc[word.GetWord()])
 
-		// wd := &pb.WordResponse{
-		// 	Words: fmt.Sprint(Dyc[word1]),
-		// }
-		return &pb.WordResponse{
-			Words: Dyc[word.GetWord()],
+		 jst.Publish(StreamName, []byte(Dyc[word.GetWord()]))
+		return &se.EnglishDictionarySearchWordResponse{
+			Words: word.Word + " - " + Dyc[word.GetWord()],
 		}, nil
+		// ExampleJetStream(Dyc[word.GetWord()])
+
 	} else {
-		return &pb.WordResponse{
+		return &se.EnglishDictionarySearchWordResponse{
 			Words: string(""),
 		}, WordNotFound
 	}
@@ -108,20 +149,175 @@ func (serv *server) SearchWords(ctx context.Context, word *pb.Wordrequest) (*pb.
 }
 
 func main() {
-	flag.Parse()
+	
 
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+	// ExampleJetStream(NewServer())
+
+	
+
+	grpcMux := runtime.NewServeMux()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	err := se.RegisterEnglishDictionaryServiceHandlerServer(ctx, grpcMux, NewServer())
+
 	if err != nil {
-		fmt.Printf("errors %v failed to liten in port %v", err, *port)
+		log.Fatal("can not register handler Server", err)
 	}
 
-	serv := grpc.NewServer()
+	mux := http.NewServeMux()
 
-	pb.RegisterEnglishDictionaryServer(serv, &server{})
-	log.Printf("server listening at %v", listen.Addr())
+	mux.Handle("/", grpcMux)
 
-	if err := serv.Serve(listen); err != nil {
-		log.Fatalf("failed to Serve %v", err)
+	listener, err := net.Listen("tcp", ":5000")
+
+	if err != nil {
+		log.Fatal("can not create listener", err)
 	}
 
+	log.Println("http Gateway Server is being Started", listener.Addr().String())
+
+	err = http.Serve(listener, mux)
+
+	if err != nil {
+		log.Fatal("can not start grpc server", err)
+	}
+}
+
+func JetStreamInit() (nats.JetStreamContext, error) {
+
+	//connect to NATS
+
+	nc, err := nats.Connect("nats://0.0.0.0:4222")
+
+	if err != nil {
+		return nil, errors.New("coudl not connect to Nats")
+	}
+
+	log.Println("connected to Jetstream", nc.ConnectedAddr())
+	//create JetStream Context
+
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
+
+	if err != nil {
+		log.Println("could not publish to Jestream")
+		return nil, err
+	}
+	log.Println("successfully published JetStream")
+	return js, nil
+
+}
+
+func CreateStream(jetStream nats.JetStreamContext) error {
+
+	stream, err := jetStream.StreamInfo(StreamName)
+	// stream  not found ,create it
+
+	if stream == nil {
+		log.Printf("creating stream: %s\n", StreamName)
+
+		_, err = jetStream.AddStream(
+			&nats.StreamConfig{
+				Name: StreamName,
+				// Subjects: []string{"test"},
+			},
+		)
+
+		// fmt.Print(ack)
+		if err != nil {
+			log.Println("could not add  stream")
+			return err
+		}
+
+	}
+	return nil
+
+}
+
+// func PublishWords(jst *server, word string) {
+
+// 	//publish Subject SEARCHWORDS
+
+// 	// _, err := jst.Publish(StreamName, []byte(word))
+
+// 	if err != nil {
+// 		log.Println("could not publish", err)
+// 	} else {
+
+// 		fmt.Printf("Publish ==> Message:%s\n", word)
+// 	}
+// }
+
+// }
+/* 
+func ExampleJetStream(sv *server) {
+	nc, err := nats.Connect("nats://0.0.0.0:4222")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print("Jet stream started")
+
+	// Use the JetStream context to produce and consumer messages
+	// that have been persisted.
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
+	if err != nil {
+		log.Fatal(err)
+	}
+	resp, err := sv.EnglishDictionarySearchWord(context.Background(), &se.EnglishDictionarySearchWordRequest{Word: StreamName})
+	js.AddStream(&nats.StreamConfig{
+		Name:     StreamName,
+		Subjects: []string{resp.GetWords()},
+	})
+
+	js.Publish(StreamName, []byte(resp.GetWords()))
+
+fmt.Print("stream topic added")
+
+	// fmt.Print(&ack.Stream)
+	fmt.Print((js.StreamNames()))
+	// ordered push consumer
+	js.Subscribe(StreamName, func(msg *nats.Msg) {
+		meta, _ := msg.Metadata()
+		fmt.Println(string(msg.Data))
+		fmt.Print("get message from steam", msg.Data)
+		fmt.Printf("Stream Sequence  : %v\n", meta.Sequence.Stream)
+		fmt.Printf("Consumer Sequence: %v\n", meta.Sequence.Consumer)
+	})
+
+	//  nats.OrderedConsumer())
+	// return
+}
+ */
+// func ExampleJetStream2() (
+
+// )
+
+
+
+
+
+func consumeWords(js nats.JetStreamContext) {
+	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
+		err := m.Ack()
+
+		if err != nil {
+			log.Println("Unable to Ack", err)
+			return
+		}
+
+		fmt.Println(string(m.Data))
+
+		log.Println("Successfully consumed")
+
+		//		log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
+		
+		// send answer via JetStream using another subject if you need
+		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
+	})
+
+	if err != nil {
+		log.Println("Subscribe failed")
+		return
+	}
 }
