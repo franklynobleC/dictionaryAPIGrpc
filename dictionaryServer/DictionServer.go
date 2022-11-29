@@ -235,63 +235,6 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 
 }
 
-// func PublishWords(jst *server, word string) {
-
-// 	//publish Subject SEARCHWORDS
-
-// 	// _, err := jst.Publish(StreamName, []byte(word))
-
-// 	if err != nil {
-// 		log.Println("could not publish", err)
-// 	} else {
-
-// 		fmt.Printf("Publish ==> Message:%s\n", word)
-// 	}
-// }
-
-// }
-/* 
-func ExampleJetStream(sv *server) {
-	nc, err := nats.Connect("nats://0.0.0.0:4222")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Print("Jet stream started")
-
-	// Use the JetStream context to produce and consumer messages
-	// that have been persisted.
-	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
-	if err != nil {
-		log.Fatal(err)
-	}
-	resp, err := sv.EnglishDictionarySearchWord(context.Background(), &se.EnglishDictionarySearchWordRequest{Word: StreamName})
-	js.AddStream(&nats.StreamConfig{
-		Name:     StreamName,
-		Subjects: []string{resp.GetWords()},
-	})
-
-	js.Publish(StreamName, []byte(resp.GetWords()))
-
-fmt.Print("stream topic added")
-
-	// fmt.Print(&ack.Stream)
-	fmt.Print((js.StreamNames()))
-	// ordered push consumer
-	js.Subscribe(StreamName, func(msg *nats.Msg) {
-		meta, _ := msg.Metadata()
-		fmt.Println(string(msg.Data))
-		fmt.Print("get message from steam", msg.Data)
-		fmt.Printf("Stream Sequence  : %v\n", meta.Sequence.Stream)
-		fmt.Printf("Consumer Sequence: %v\n", meta.Sequence.Consumer)
-	})
-
-	//  nats.OrderedConsumer())
-	// return
-}
- */
-// func ExampleJetStream2() (
-
-// )
 
 
 
