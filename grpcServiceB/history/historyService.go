@@ -6,6 +6,10 @@ import (
 	// "errors"
 	"context"
 	// "encoding/json"
+	"net"
+	"net/http"
+	// "strings"
+	// "encoding/json"
 	"fmt"
 	"log"
 	// "os/user"
@@ -14,6 +18,10 @@ import (
 	// "context"
 
 	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto"
+	// "github.com/go-playground/locales/asa"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	// "google.golang.org/grpc/codes"
+	// "google.golang.org/grpc/status"
 	// "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
 	"github.com/nats-io/nats.go"
 	// "go.mongodb.org/mongo-driver/mongo"
@@ -25,19 +33,79 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type service struct {
+type server struct {
 	hs.UnimplementedDictionaryHistoryServiceServer
-	database *mongo.Client
+	// database *mongo.Client
 }
 
 var (
 	StreamName = "AllWORDS"
 )
 
-//  func (sv *service) DictionaryHistory(ctx context.Context, history *sv.DictionaryHistoryRequest) (*sv.DictionaryHistoryResponse, error) {
-//     log.Println("Get all Data from Database", sv.GetHsitory())
+func NewServer() *server {
+	return &server{}
+}
 
-// 	err := sv.
+func (sv *server) DictionaryHistory(ctx context.Context, req *hs.DictionaryHistoryRequest) (*hs.DictionaryHistoryResponse, error) {
+	// log.Println("Get all Data from Database", hs.	)// err := sv.
+
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
+
+	if err != nil {
+		log.Fatal("could not connect to mongo Db")
+	}
+	fmt.Print("database connected successfully")
+
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err.Error())
+	}
+
+	wordDictionary := client.Database("borderlesshq").Collection("dictionary")
+
+	fmt.Print("database created", wordDictionary.Database())
+	fmt.Print("database created", wordDictionary.Database())
+
+	cur, err := wordDictionary.Find(context.Background(), bson.D{})
+
+	if err != nil {
+		log.Println("returned error from getting data", err.Error())
+	}
+
+	res := struct {
+		m map[string]string
+	}{}
+
+	defer cur.Close(context.Background())
+
+	for cur.Next(context.Background()) {
+
+		err := cur.Decode(&res.m)
+
+		if err != nil {
+			log.Println("can not get result")
+		}
+
+
+	fmt.Print("\n")
+	fmt.Print("------------------------------------------------")
+	fmt.Println(res.m)
+	// tests := res.m
+	keys := []string{}
+
+	for k, v := range res.m {
+		keys = append(keys, string(k +""+v))
+	}
+
+	fmt.Println("FROM MARSHALLING")
+	return &hs.DictionaryHistoryResponse{
+		History: keys,
+		// Sleep for a little bit..
+
+	}, nil
+	}
+
+	return nil, nil
+}
 
 //  }
 
@@ -50,7 +118,7 @@ var (
 
 // func(word *mongo.Client) (*mongo.)
 
-func main() {
+func subScribeAndWrite() {
 
 	// 	//TODO: FOR SUBSCRIBING PUBLISHING
 
@@ -123,7 +191,7 @@ func main() {
 	// Ok := fil.Next(context.TODO())
 
 	defer fil.Close(context.Background())
-	fmt.Println(fil.Next(context.TODO()))
+	// fmt.Println(fil.Next(context.TODO()))
 	//  fmt.Print(fil.Decode(fil))
 
 	for fil.Next(context.Background()) {
@@ -144,30 +212,65 @@ func main() {
 
 }
 
-func consumeWords(js nats.JetStreamContext) {
+func main() {
+	defer subScribeAndWrite()
 
-	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
-		err := m.Ack()
+	grpcMux := runtime.NewServeMux()
+	ctx, cancel := context.WithCancel(context.Background())
 
-		if err != nil {
-			log.Println("Unable to Ack", err)
-			return
-		}
+	defer cancel()
 
-		js.Consumers("consumer")
-		fmt.Println(string(m.Data))
-
-		log.Println("Successfully consumed From Service BB")
-
-		//
-		// log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
-		// send answer via JetStream using another subject if you need
-		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
-	})
+	err := hs.RegisterDictionaryHistoryServiceHandlerServer(ctx, grpcMux, NewServer())
 
 	if err != nil {
-		log.Println("Subscribe failed")
-		return
+		log.Fatal("can not register handler Server", err)
+	}
+
+	mux := http.NewServeMux()
+
+	//
+	mux.Handle("/", grpcMux)
+
+	listener, err := net.Listen("tcp", ":5000")
+
+	if err != nil {
+		log.Fatal("can not create listener", err)
+	}
+
+	log.Println("http Gateway Server is being Started", listener.Addr().String())
+
+	err = http.Serve(listener, mux)
+
+	if err != nil {
+		log.Fatal("can not start grpc server", err)
 	}
 
 }
+
+// func consumeWords(js nats.JetStreamContext) {
+
+// 	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
+// 		err := m.Ack()
+
+// 		if err != nil {
+// 			log.Println("Unable to Ack", err)
+// 			return
+// 		}
+
+// 		js.Consumers("consumer")
+// 		fmt.Println(string(m.Data))
+
+// 		log.Println("Successfully consumed From Service BB")
+
+// 		//
+// 		// log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
+// 		// send answer via JetStream using another subject if you need
+// 		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
+// 	})
+
+// 	if err != nil {
+// 		log.Println("Subscribe failed")
+// 		return
+// 	}
+
+// }

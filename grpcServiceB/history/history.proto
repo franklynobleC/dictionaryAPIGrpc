@@ -18,9 +18,9 @@ import "google/api/http.proto";
     }
   }
 
-  message DictionaryHistoryRequest{
-    string history = 1; 
-  }
+  message DictionaryHistoryRequest{}
+  
+  
   message DictionaryHistoryResponse {
-    string history = 2;
+      repeated string history = 2;
   }
