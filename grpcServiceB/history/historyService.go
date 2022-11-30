@@ -27,13 +27,24 @@ import (
 
 type service struct {
 	hs.UnimplementedDictionaryHistoryServiceServer
+	database *mongo.Client
 }
 
 var (
 	StreamName = "AllWORDS"
 )
 
-// func (ch *service) DictionaryHistory(ctx context.Context, history *hs.DictionaryHistoryRequest) (*hs.DictionaryHistoryResponse, error) {
+//  func (sv *service) DictionaryHistory(ctx context.Context, history *sv.DictionaryHistoryRequest) (*sv.DictionaryHistoryResponse, error) {
+//     log.Println("Get all Data from Database", sv.GetHsitory())
+
+// 	err := sv.
+
+//  }
+
+// func (sv *service) GetAllWords(ctx context.Context, mongo *mongo.Client, data string) (string, error) {
+
+// res , err := mongo.
+// }
 
 // 	//TODO: FOR NATS PUBLISHING
 
@@ -74,7 +85,7 @@ func main() {
 		log.Print("error subscribing", err)
 	}
 	//wait for a  message
-    //wait for this number of seconds to get the using  this time out
+	//wait for this number of seconds to get the using  this time out
 	msg, err := sub.NextMsg(50 * time.Second)
 
 	if err != nil {
@@ -106,6 +117,28 @@ func main() {
 	}
 	//else diplay the id of the newly inserted ID
 	fmt.Println(words.InsertedID)
+
+	fil, err := wordDictionary.Find(context.TODO(), nn)
+
+	// Ok := fil.Next(context.TODO())
+
+	defer fil.Close(context.Background())
+	fmt.Println(fil.Next(context.TODO()))
+	//  fmt.Print(fil.Decode(fil))
+
+	for fil.Next(context.Background()) {
+
+		result := struct {
+			m map[string]string
+		}{}
+
+		err := fil.Decode(&result)
+
+		if err != nil {
+			log.Fatal(err.Error(), "decoding data")
+		}
+
+	}
 
 	//fmt.Println(consumeWords(jst))
 

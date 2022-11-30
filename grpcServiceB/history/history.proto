@@ -11,7 +11,7 @@ import "google/api/http.proto";
   service  DictionaryHistoryService{
     rpc DictionaryHistory(DictionaryHistoryRequest)returns (DictionaryHistoryResponse) { 
       option (google.api.http) = {
-        get:"/v1/dictionaryHistory/{history}" 
+        get:"/v1/dictionaryHistory/history" 
         
       };
     

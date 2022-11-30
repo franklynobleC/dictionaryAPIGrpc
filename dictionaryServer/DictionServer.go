@@ -134,7 +134,7 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 		 jst.Publish(StreamName, []byte(Dyc[word.GetWord()]))
 		return &se.EnglishDictionarySearchWordResponse{
-			Words: word.Word + " - " + Dyc[word.GetWord()],
+			Words: word.Word + "        - Meaning " + Dyc[word.GetWord()],
 		}, nil
 		// ExampleJetStream(Dyc[word.GetWord()])
 
