@@ -17,21 +17,14 @@ import (
 	// "runtime"
 	"strings"
 
-	// "github.com/gin-gonic/gin"
-	// "github.com/go-playground/locales/sv"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/nats-io/nats.go"
 	// "google.golang.org/grpc"
 	// "google.golang.org/grpc/credentials/insecure"
-	// "github.com/onsi/ginkgo/config"
-	// "golang.org/x/net/http2"
-	// "golang.org/x/net/http2/h2c"
-	//  util "github.com/franklynobleC/dictionaryAPIGrpc/util"
-	se "github.com/franklynobleC/dictionaryAPIGrpc/proto"
-	// s"github.com/franklynobleC/dictionaryAPIGrpc/proto/pb"google.golang.org/grpc"
+	//   util "github.com/franklynobleC/dictionaryAPIGrpc/util"
+	// se "github.com/franklynobleC/dictionaryAPIGrpc/pb/proto"
+	 se "github.com/franklynobleC/dictionaryAPIGrpc/proto"
 )
-
-// import "google.golang.org/genproto/googleapis/cloud/orchestration/airflow/service/v1"
 
 // Dictioary Server Error
 
@@ -56,7 +49,7 @@ var (
 
 type Dyc interface{}
 type Last struct {
-	Word   string
+	Word    string
 	Meaning string
 }
 
@@ -73,15 +66,20 @@ func NewServer() *server {
 
 func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.EnglishDictionarySearchWordRequest) (*se.EnglishDictionarySearchWordResponse, error) {
 
-	// dd := &serv.Publish(StreamName, []byte(word.Word))
-	// log.Println("receivedwords: %v")
-	words := &se.EnglishDictionarySearchWordRequest{
-		Word: string(word.GetWord()),
-	}
-	fmt.Print(words, "1st")
+      words :=  &se.EnglishDictionarySearchWordRequest{
+		Word:  strings.ToLower(strings.TrimSpace(word.GetWord())),
 
-	strings.TrimSpace(strings.ToLower(words.GetWord()))
-	fmt.Print(words, "2nd")
+	  }
+
+	// words := &se.EnglishDictionarySearchWordRequest{
+	// 	Word: string(word.Word),
+	// }
+	
+	strings.TrimSpace(strings.ToLower(words.Word))
+	//   words := strings.TrimSpace(strings.ToLower(word))
+	fmt.Print(words.Word, "1st")
+
+	fmt.Print(words.Word, "2nd")
 
 	if len(words.GetWord()) == 0 {
 
@@ -89,7 +87,8 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 			Words: EmptyString.Error(),
 		}, EnterKeyWord
 	}
-	fmt.Print("before opening", words.GetWord())
+	fmt.Print("before opening", strings.ToLower(words.GetWord()))
+	   
 
 	var Dyc map[string]string
 
@@ -122,11 +121,11 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 	// defer consumeWords(jst)
 	var S = Last{
-		
-	Word:    word.Word,
-		Meaning: Dyc[word.GetWord()],
+
+		Word:    words.Word,
+		Meaning: Dyc[words.GetWord()],
 	}
-    //   for k,v := range S.meaning {
+	//   for k,v := range S.meaning {
 
 	//   }
 	_, kePresent := Dyc[words.GetWord()]
@@ -138,18 +137,18 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 		stm, err := json.Marshal(S)
 		if err != nil {
-					
-		log.Print(MarshallError, "from service A", err)
+
+			log.Print(MarshallError, "from service A", err)
 		}
-		
+
 		jst.Publish(StreamName, stm)
 
 		log.Println("byt printed ACTUAL DATA  ", string(stm))
 
 		return &se.EnglishDictionarySearchWordResponse{
 
-			Words:   word.Word,
-			Meaning: Dyc[word.GetWord()],
+			Words:    word.Word,
+			Meaning: Dyc[words.GetWord()],
 		}, nil
 		// ExampleJetStream(Dyc[word.GetWord()])
 

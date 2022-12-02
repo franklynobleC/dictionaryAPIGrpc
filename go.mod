@@ -81,4 +81,5 @@ require (
 	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	labix.org/v2/mgo v0.0.0-20140701140051-000000000287
 )

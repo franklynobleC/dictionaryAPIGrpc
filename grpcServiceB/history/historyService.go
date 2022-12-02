@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	// "encoding/json"
-	"fmt"
+"fmt"
 	"log"
 	"net"
 	"net/http" //would uncomment
@@ -16,6 +16,7 @@ import (
 	// "sync"
 	// "context"
 
+	//   c "labix.org/v2/mgo"
 	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto"
 	// "google.golang.org/grpc"
 	// "github.com/go-playground/locales/id"
@@ -31,7 +32,7 @@ import (
 	// "go.mongodb.org/mongo-driver/mongo"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
 	// "go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -61,6 +62,8 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
 
+
+	
 	if err != nil {
 		log.Fatal("could not connect to mongo Db")
 	}
@@ -81,11 +84,11 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 		log.Println("returned error from getting data", err.Error())
 	}
 
-	res := struct {
-		ID      primitive.ObjectID `bson:"_id"`
-		Word    string             `bson:"word"`
-		Meaning string             `bson:"meaning"`
-	}{}
+	// res := struct {
+	// 	ID      primitive.ObjectID `bson:"_id"`
+	// 	Word    string             `bson:"word"`
+	// 	Meaning string             `bson:"meaning"`
+	// }{}
 
 	// TD := []struct {
 	// 	id   string
@@ -93,36 +96,37 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 	// }{}
 	// Gresp := hs.DictionaryHistoryResponse{}
 	// defer cur.Close(context.Background())
-	var Gresp *hs.DictionaryHistoryResponse
+	// var Gresp *hs.DictionaryHistoryResponse
+
+	 list := []*hs.History{}
 	for cur.Next(context.Background()) {
 
-		err = cur.Decode(&res)
+		lt := new(hs.History)
+
+		err = cur.Decode(&lt)
 
 		if err != nil {
 			log.Println("can not get result")
 		}
 		fmt.Print("\n")
 		fmt.Print("------------------------------------------------")
-		fmt.Println(res.ID)
+		fmt.Println(lt.Id)
 		// tests := res.m
 		// keys := []string{}
+		list = append(list, lt)
+	}
 
 		fmt.Println("FROM MARSHALLING")
-		Gresp = &hs.DictionaryHistoryResponse{
-			History: []*hs.History{
-				{
-
-					Id:      res.ID.Hex(),
-					Word:    res.Word,
-					Meaning: res.Meaning,
-				}, 
-			},
+		 return &hs.DictionaryHistoryResponse{
+			Histories: list,
+			
 			// Sleep for a little bit.
-		}
+		}, nil 
 
 	}
-	return Gresp, nil
-}
+	// fmt.Println(Gresp.GetHistories())
+	// return nil, nil
+
 
 // fmt.Println(res.ID)
 // tests := res.m
@@ -199,40 +203,8 @@ func subScribeAndWrite() {
 		log.Println("ERROR UNMARSHALLING FROM SERVICE B", err)
 	}
 
-	// for _, v := range Sub {
+	
 
-	// log.Println(v.Word, sub.Meaning)
-	// Sub = append(Sub, v)
-
-	// wordTO := string(msg.Data)
-	// va(msg.Ddata
-	// res, err := json.Marshal(msg.Data)
-
-	// WordM := make(map[string]interface{})
-	// var ccc string
-
-	// word1 := struct{
-	// 	  word string
-	// 	  meaning string
-	// }{
-	// 	 word:string(msg.Data),
-	// 	meaning: string(msg.Data),
-	// }
-
-	// sds := string(msg.Data)
-	// var v byte
-	// for _, v = range msg.Data {
-	// 	fmt.Print(v)
-
-	// }
-
-	//  word1 = struct{word string; meaning string}{
-	// 	 word:string(msg.Data),
-	// 	meaning: string(msg.Data),
-	//  }
-	// var wordMean string
-	// err = json.Unmarshal(msg.Data, &ccc)
-	// ss := string(msgData)
 	log.Printf("Word: Meaning %s", string(msg.Data))
 	// smg := string(msg.Data)
 
@@ -258,8 +230,10 @@ func subScribeAndWrite() {
 	defer fil.Close(context.Background())
 	// fmt.Println(fil.Next(context.TODO()))
 	//  fmt.Print(fil.Decode(fil))
-
+         
 	for fil.Next(context.Background()) {
+
+       
 
 		result := struct {
 			m map[string]string
@@ -281,7 +255,7 @@ func main() {
 
 	//   opts := []grpc.ServerOption{}
 
-	defer subScribeAndWrite()
+	 go subScribeAndWrite()
 
 	grpcMux := runtime.NewServeMux()
 
@@ -300,7 +274,7 @@ func main() {
 	//
 	mux.Handle("/", grpcMux)
 
-	listener, err := net.Listen("tcp", ":5000")
+	listener, err := net.Listen("tcp", ":6000")
 
 	if err != nil {
 		log.Fatal("can not create listener", err)
@@ -315,31 +289,3 @@ func main() {
 	}
 
 }
-
-// func consumeWords(js nats.JetStreamContext) {
-
-// 	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
-// 		err := m.Ack()
-
-// 		if err != nil {
-// 			log.Println("Unable to Ack", err)
-// 			return
-// 		}
-
-// 		js.Consumers("consumer")
-// 		fmt.Println(string(m.Data))
-
-// 		log.Println("Successfully consumed From Service BB")
-
-// 		//
-// 		// log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
-// 		// send answer via JetStream using another subject if you need
-// 		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
-// 	})
-
-// 	if err != nil {
-// 		log.Println("Subscribe failed")
-// 		return
-// 	}
-
-// }
