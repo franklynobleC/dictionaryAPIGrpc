@@ -1,5 +1,7 @@
 package main
 
+// package main
+
 import (
 	"context"
 	"encoding/json"
@@ -35,7 +37,7 @@ import (
 
 var (
 	OpeningFileError = errors.New("error opening file")
-	MarshallError    = errors.New("error decoding dictionary")
+	MarshallError    = errors.New("error encoding dictionary")
 	WordNotFound     = errors.New("keyword not found, try another key word")
 	EnterKeyWord     = errors.New("enter a keyword")
 	EmptyString      = errors.New("")
@@ -53,6 +55,10 @@ var (
 )
 
 type Dyc interface{}
+type Last struct {
+	Word   string
+	Meaning string
+}
 
 type server struct {
 	se.UnimplementedEnglishDictionaryServiceServer
@@ -100,41 +106,50 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 	err = json.Unmarshal(valuebyte, &Dyc)
 
-	if err != nil {
-		return &se.EnglishDictionarySearchWordResponse{
-			Words: fmt.Sprint(Dyc[EmptyString.Error()]),
-		}, MarshallError
-	}
-
 	fmt.Print(reflect.ValueOf(Dyc).Len())
 
-     //TODO: FOR NATS PUBLISHING
-
+	//TODO: FOR NATS PUBLISHING
 
 	jst, err := JetStreamInit()
-      if err != nil {
-		log.Fatal("cant connect to nats ", err.Error())
-	  }
-	 
-	err = CreateStream(jst)
 	if err != nil {
-		log.Fatal("cant create sttream ", err.Error())
+		log.Fatal("cant connect to nats ", err.Error())
 	}
 
-	defer consumeWords(jst)
+	err = CreateStream(jst)
+	if err != nil {
+		log.Fatal("cant create stream ", err.Error())
+	}
 
+	// defer consumeWords(jst)
+	var S = Last{
+		
+	Word:    word.Word,
+		Meaning: Dyc[word.GetWord()],
+	}
+    //   for k,v := range S.meaning {
+
+	//   }
 	_, kePresent := Dyc[words.GetWord()]
-	
-	
 
 	if kePresent {
 		fmt.Println(kePresent, "key present")
 		//Publish(StreamName, []byte(Dyc[word.GetWord()]))
 		// ExampleJetStream(  Dyc[word.GetWord()])
 
-		 jst.Publish(StreamName, []byte(Dyc[word.GetWord()]))
+		stm, err := json.Marshal(S)
+		if err != nil {
+					
+		log.Print(MarshallError, "from service A", err)
+		}
+		
+		jst.Publish(StreamName, stm)
+
+		log.Println("byt printed ACTUAL DATA  ", string(stm))
+
 		return &se.EnglishDictionarySearchWordResponse{
-			Words: word.Word + "        - Meaning " + Dyc[word.GetWord()],
+
+			Words:   word.Word,
+			Meaning: Dyc[word.GetWord()],
 		}, nil
 		// ExampleJetStream(Dyc[word.GetWord()])
 
@@ -149,11 +164,8 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 }
 
 func main() {
-	
 
 	// ExampleJetStream(NewServer())
-
-	
 
 	grpcMux := runtime.NewServeMux()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -235,11 +247,6 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 
 }
 
-
-
-
-
-
 func consumeWords(js nats.JetStreamContext) {
 	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
 		err := m.Ack()
@@ -254,7 +261,7 @@ func consumeWords(js nats.JetStreamContext) {
 		log.Println("Successfully consumed")
 
 		//		log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
-		
+
 		// send answer via JetStream using another subject if you need
 		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
 	})

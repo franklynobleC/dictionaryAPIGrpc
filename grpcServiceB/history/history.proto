@@ -5,11 +5,12 @@ package history;
 import "google/api/annotations.proto";
 import "google/api/http.proto";
 
+
  option go_package = "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/historyService";
 
 
   service  DictionaryHistoryService{
-    rpc DictionaryHistory(DictionaryHistoryRequest)returns (DictionaryHistoryResponse) { 
+    rpc DictionaryHistory(DictionaryHistoryRequest)returns ( DictionaryHistoryResponse) { 
       option (google.api.http) = {
         get:"/v1/dictionaryHistory/history" 
         
@@ -20,7 +21,14 @@ import "google/api/http.proto";
 
   message DictionaryHistoryRequest{}
   
-  
+ 
+ message History{
+  string id  = 1;
+   string word = 2; 
+   string meaning = 3;
+    // google.protobuf.Struct properties = 3;
+ }
+
   message DictionaryHistoryResponse {
-      repeated string history = 2;
+    repeated   History  history = 4;
   }

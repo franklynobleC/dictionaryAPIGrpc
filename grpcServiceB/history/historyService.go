@@ -5,21 +5,25 @@ import (
 	// "context"s
 	// "errors"
 	"context"
-	// "encoding/json"
-	"net"
-	"net/http"
-	// "strings"
+	"encoding/json"
 	// "encoding/json"
 	"fmt"
 	"log"
+	"net"
+	"net/http" //would uncomment
 	// "os/user"
 	"time"
 	// "sync"
 	// "context"
 
 	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto"
+	// "google.golang.org/grpc"
+	// "github.com/go-playground/locales/id"
+	// "github.com/go-playground/locales/id_ID"
+	// "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	// "golang.org/x/text/unicode/rangetable"
 	// "github.com/go-playground/locales/asa"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime" //would uncomment
 	// "google.golang.org/grpc/codes"
 	// "google.golang.org/grpc/status"
 	// "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
@@ -27,6 +31,7 @@ import (
 	// "go.mongodb.org/mongo-driver/mongo"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	// "go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -46,7 +51,12 @@ func NewServer() *server {
 	return &server{}
 }
 
-func (sv *server) DictionaryHistory(ctx context.Context, req *hs.DictionaryHistoryRequest) (*hs.DictionaryHistoryResponse, error) {
+type LastFromSubscribe struct {
+	Word    string
+	Meaning string
+}
+
+func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryRequest) (*hs.DictionaryHistoryResponse, error) {
 	// log.Println("Get all Data from Database", hs.	)// err := sv.
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
@@ -72,51 +82,66 @@ func (sv *server) DictionaryHistory(ctx context.Context, req *hs.DictionaryHisto
 	}
 
 	res := struct {
-		m map[string]string
+		ID      primitive.ObjectID `bson:"_id"`
+		Word    string             `bson:"word"`
+		Meaning string             `bson:"meaning"`
 	}{}
 
-	defer cur.Close(context.Background())
-
+	// TD := []struct {
+	// 	id   string
+	// 	word string
+	// }{}
+	// Gresp := hs.DictionaryHistoryResponse{}
+	// defer cur.Close(context.Background())
+	var Gresp *hs.DictionaryHistoryResponse
 	for cur.Next(context.Background()) {
 
-		err := cur.Decode(&res.m)
+		err = cur.Decode(&res)
 
 		if err != nil {
 			log.Println("can not get result")
 		}
+		fmt.Print("\n")
+		fmt.Print("------------------------------------------------")
+		fmt.Println(res.ID)
+		// tests := res.m
+		// keys := []string{}
 
+		fmt.Println("FROM MARSHALLING")
+		Gresp = &hs.DictionaryHistoryResponse{
+			History: []*hs.History{
+				{
 
-	fmt.Print("\n")
-	fmt.Print("------------------------------------------------")
-	fmt.Println(res.m)
-	// tests := res.m
-	keys := []string{}
+					Id:      res.ID.Hex(),
+					Word:    res.Word,
+					Meaning: res.Meaning,
+				}, 
+			},
+			// Sleep for a little bit.
+		}
 
-	for k, v := range res.m {
-		keys = append(keys, string(k +""+v))
 	}
-
-	fmt.Println("FROM MARSHALLING")
-	return &hs.DictionaryHistoryResponse{
-		History: keys,
-		// Sleep for a little bit..
-
-	}, nil
-	}
-
-	return nil, nil
+	return Gresp, nil
 }
 
-//  }
+// fmt.Println(res.ID)
+// tests := res.m
+// keys := []string{}
 
-// func (sv *service) GetAllWords(ctx context.Context, mongo *mongo.Client, data string) (string, error) {
-
-// res , err := mongo.
+// fmt.Println("FROM MARSHALLING 22")
+// return Gresp, nil
 // }
+// 	return &hs.DictionaryHistoryResponse{
+// 		History: []*hs.History{
+// 			  &*SDS[
 
-// 	//TODO: FOR NATS PUBLISHING
+// 			  ]
+// 		},
+// 	},
 
-// func(word *mongo.Client) (*mongo.)
+// return nil, nil
+
+// }
 
 func subScribeAndWrite() {
 
@@ -149,9 +174,12 @@ func subScribeAndWrite() {
 	//subscribe
 	sub, err := nc.SubscribeSync(StreamName)
 
+	// nc.InMsgs
+
 	if err != nil {
 		log.Print("error subscribing", err)
 	}
+
 	//wait for a  message
 	//wait for this number of seconds to get the using  this time out
 	msg, err := sub.NextMsg(50 * time.Second)
@@ -161,7 +189,20 @@ func subScribeAndWrite() {
 	}
 
 	//use  the response
-	log.Printf("Reply: %s", msg.Data)
+	log.Print("from metadata", msg.Subject)
+
+	var Sub LastFromSubscribe
+
+	err = json.Unmarshal(msg.Data, &Sub)
+
+	if err != nil {
+		log.Println("ERROR UNMARSHALLING FROM SERVICE B", err)
+	}
+
+	// for _, v := range Sub {
+
+	// log.Println(v.Word, sub.Meaning)
+	// Sub = append(Sub, v)
 
 	// wordTO := string(msg.Data)
 	// va(msg.Ddata
@@ -169,10 +210,34 @@ func subScribeAndWrite() {
 
 	// WordM := make(map[string]interface{})
 	// var ccc string
-	sds := string(msg.Data)
+
+	// word1 := struct{
+	// 	  word string
+	// 	  meaning string
+	// }{
+	// 	 word:string(msg.Data),
+	// 	meaning: string(msg.Data),
+	// }
+
+	// sds := string(msg.Data)
+	// var v byte
+	// for _, v = range msg.Data {
+	// 	fmt.Print(v)
+
+	// }
+
+	//  word1 = struct{word string; meaning string}{
+	// 	 word:string(msg.Data),
+	// 	meaning: string(msg.Data),
+	//  }
 	// var wordMean string
 	// err = json.Unmarshal(msg.Data, &ccc)
-	nn := bson.D{{Key: "words", Value: sds}}
+	// ss := string(msgData)
+	log.Printf("Word: Meaning %s", string(msg.Data))
+	// smg := string(msg.Data)
+
+	// msg.Metadata().
+	nn := bson.D{{Key: "word", Value: Sub.Word}, {Key: "meaning", Value: Sub.Meaning}}
 
 	if err != nil {
 		log.Print("can not unmarshal")
@@ -208,14 +273,18 @@ func subScribeAndWrite() {
 
 	}
 
-	//fmt.Println(consumeWords(jst))
-
 }
 
+//fmt.Println(consumeWords(jst))
+
 func main() {
+
+	//   opts := []grpc.ServerOption{}
+
 	defer subScribeAndWrite()
 
 	grpcMux := runtime.NewServeMux()
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()

@@ -22,5 +22,6 @@ import "google/api/http.proto";
     string word = 1; 
   }
   message EnglishDictionarySearchWordResponse {
-    string words = 2;
+    string word = 2;
+    string meaning = 1;
   }

@@ -1,4 +1,5 @@
 package main
+// package main
 
 import (
 	"context"
@@ -120,5 +121,3 @@ func findWords(word string) (string, error) {
 	}
 	return "", errors.New("error no key word")
 }
-
-//
