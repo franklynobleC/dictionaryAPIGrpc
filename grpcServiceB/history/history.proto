@@ -23,7 +23,7 @@ import "google/api/http.proto";
   
  
  message History{
-   string id  = 1;
+  
    string word = 2; 
    string meaning = 3;
     // google.protobuf.Struct properties = 3;

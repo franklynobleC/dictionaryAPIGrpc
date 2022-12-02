@@ -1,39 +1,20 @@
 package main
 
 import (
-	// "context"
-	// "context"s
-	// "errors"
 	"context"
 	"encoding/json"
 	// "encoding/json"
-"fmt"
+	"fmt"
 	"log"
 	"net"
 	"net/http" //would uncomment
 	// "os/user"
 	"time"
-	// "sync"
-	// "context"
 
-	//   c "labix.org/v2/mgo"
-	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto"
-	// "google.golang.org/grpc"
-	// "github.com/go-playground/locales/id"
-	// "github.com/go-playground/locales/id_ID"
-	// "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	// "golang.org/x/text/unicode/rangetable"
-	// "github.com/go-playground/locales/asa"
+	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto" //Service B protoFile  is  in This Directory
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime" //would uncomment
-	// "google.golang.org/grpc/codes"
-	// "google.golang.org/grpc/status"
-	// "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
 	"github.com/nats-io/nats.go"
-	// "go.mongodb.org/mongo-driver/mongo"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
-	// "go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -62,8 +43,6 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
 
-
-	
 	if err != nil {
 		log.Fatal("could not connect to mongo Db")
 	}
@@ -84,21 +63,7 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 		log.Println("returned error from getting data", err.Error())
 	}
 
-	// res := struct {
-	// 	ID      primitive.ObjectID `bson:"_id"`
-	// 	Word    string             `bson:"word"`
-	// 	Meaning string             `bson:"meaning"`
-	// }{}
-
-	// TD := []struct {
-	// 	id   string
-	// 	word string
-	// }{}
-	// Gresp := hs.DictionaryHistoryResponse{}
-	// defer cur.Close(context.Background())
-	// var Gresp *hs.DictionaryHistoryResponse
-
-	 list := []*hs.History{}
+	list := []*hs.History{}
 	for cur.Next(context.Background()) {
 
 		lt := new(hs.History)
@@ -110,42 +75,22 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 		}
 		fmt.Print("\n")
 		fmt.Print("------------------------------------------------")
-		fmt.Println(lt.Id)
+		fmt.Println(lt.Word)
 		// tests := res.m
 		// keys := []string{}
 		list = append(list, lt)
 	}
 
-		fmt.Println("FROM MARSHALLING")
-		 return &hs.DictionaryHistoryResponse{
-			Histories: list,
-			
-			// Sleep for a little bit.
-		}, nil 
+	fmt.Println("FROM MARSHALLING")
+	return &hs.DictionaryHistoryResponse{
+		Histories: list,
 
-	}
-	// fmt.Println(Gresp.GetHistories())
-	// return nil, nil
+		
+	}, nil
+
+}
 
 
-// fmt.Println(res.ID)
-// tests := res.m
-// keys := []string{}
-
-// fmt.Println("FROM MARSHALLING 22")
-// return Gresp, nil
-// }
-// 	return &hs.DictionaryHistoryResponse{
-// 		History: []*hs.History{
-// 			  &*SDS[
-
-// 			  ]
-// 		},
-// 	},
-
-// return nil, nil
-
-// }
 
 func subScribeAndWrite() {
 
@@ -203,8 +148,6 @@ func subScribeAndWrite() {
 		log.Println("ERROR UNMARSHALLING FROM SERVICE B", err)
 	}
 
-	
-
 	log.Printf("Word: Meaning %s", string(msg.Data))
 	// smg := string(msg.Data)
 
@@ -230,10 +173,8 @@ func subScribeAndWrite() {
 	defer fil.Close(context.Background())
 	// fmt.Println(fil.Next(context.TODO()))
 	//  fmt.Print(fil.Decode(fil))
-         
-	for fil.Next(context.Background()) {
 
-       
+	for fil.Next(context.Background()) {
 
 		result := struct {
 			m map[string]string
@@ -255,7 +196,7 @@ func main() {
 
 	//   opts := []grpc.ServerOption{}
 
-	 go subScribeAndWrite()
+	go subScribeAndWrite()
 
 	grpcMux := runtime.NewServeMux()
 

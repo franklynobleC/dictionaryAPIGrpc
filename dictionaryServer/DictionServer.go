@@ -17,13 +17,9 @@ import (
 	// "runtime"
 	"strings"
 
+	se "github.com/franklynobleC/dictionaryAPIGrpc/pb/proto" // Service A file proto is in this directory
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/nats-io/nats.go"
-	// "google.golang.org/grpc"
-	// "google.golang.org/grpc/credentials/insecure"
-	//   util "github.com/franklynobleC/dictionaryAPIGrpc/util"
-	// se "github.com/franklynobleC/dictionaryAPIGrpc/pb/proto"
-	 se "github.com/franklynobleC/dictionaryAPIGrpc/proto"
 )
 
 // Dictioary Server Error
@@ -38,17 +34,15 @@ var (
 
 const (
 	StreamName = "AllWORDS"
-	// StreamSubject = "WORDS*"
 )
-
-// var word string
 
 var (
 	port = flag.Int("port", 8082, "Server port")
 )
 
-type Dyc interface{}
-type Last struct {
+type DictionaryMap interface{}
+
+type DictionaryPayLoad struct {
 	Word    string
 	Meaning string
 }
@@ -64,17 +58,14 @@ func NewServer() *server {
 	return &server{}
 }
 
+// EnglishDictionarySearchWord, Gets a word and returns the Word  and its Meaning
 func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.EnglishDictionarySearchWordRequest) (*se.EnglishDictionarySearchWordResponse, error) {
 
-      words :=  &se.EnglishDictionarySearchWordRequest{
-		Word:  strings.ToLower(strings.TrimSpace(word.GetWord())),
+	//assings  the KeyWord and  returns the to request and Trim it space and convert to lowercase
+	words := &se.EnglishDictionarySearchWordRequest{
+		Word: strings.ToLower(strings.TrimSpace(word.GetWord())),
+	}
 
-	  }
-
-	// words := &se.EnglishDictionarySearchWordRequest{
-	// 	Word: string(word.Word),
-	// }
-	
 	strings.TrimSpace(strings.ToLower(words.Word))
 	//   words := strings.TrimSpace(strings.ToLower(word))
 	fmt.Print(words.Word, "1st")
@@ -84,13 +75,12 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 	if len(words.GetWord()) == 0 {
 
 		return &se.EnglishDictionarySearchWordResponse{
-			Words: EmptyString.Error(),
+			Word: EmptyString.Error(),
 		}, EnterKeyWord
 	}
 	fmt.Print("before opening", strings.ToLower(words.GetWord()))
-	   
 
-	var Dyc map[string]string
+	var DictionaryMap map[string]string
 
 	jsonfile, err := os.Open("dictionary.json")
 
@@ -103,9 +93,9 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 	valuebyte, _ := ioutil.ReadAll(jsonfile)
 
-	err = json.Unmarshal(valuebyte, &Dyc)
+	err = json.Unmarshal(valuebyte, &DictionaryMap)
 
-	fmt.Print(reflect.ValueOf(Dyc).Len())
+	fmt.Print(reflect.ValueOf(DictionaryMap).Len())
 
 	//TODO: FOR NATS PUBLISHING
 
@@ -120,22 +110,18 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 	}
 
 	// defer consumeWords(jst)
-	var S = Last{
+	var PayLoad = DictionaryPayLoad{
 
 		Word:    words.Word,
-		Meaning: Dyc[words.GetWord()],
+		Meaning: DictionaryMap[words.GetWord()],
 	}
-	//   for k,v := range S.meaning {
 
-	//   }
-	_, kePresent := Dyc[words.GetWord()]
+	_, kePresent := DictionaryMap[words.GetWord()]
 
 	if kePresent {
 		fmt.Println(kePresent, "key present")
-		//Publish(StreamName, []byte(Dyc[word.GetWord()]))
-		// ExampleJetStream(  Dyc[word.GetWord()])
 
-		stm, err := json.Marshal(S)
+		stm, err := json.Marshal(PayLoad)
 		if err != nil {
 
 			log.Print(MarshallError, "from service A", err)
@@ -147,24 +133,19 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 		return &se.EnglishDictionarySearchWordResponse{
 
-			Words:    word.Word,
-			Meaning: Dyc[words.GetWord()],
+			Word:   word.Word,
+			Meaning: DictionaryMap[words.GetWord()],
 		}, nil
-		// ExampleJetStream(Dyc[word.GetWord()])
 
 	} else {
 		return &se.EnglishDictionarySearchWordResponse{
-			Words: string(""),
+			Word: string(""),
 		}, WordNotFound
 	}
-
-	//  fmt.Print( string(valuebyte[]))
 
 }
 
 func main() {
-
-	// ExampleJetStream(NewServer())
 
 	grpcMux := runtime.NewServeMux()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -231,7 +212,6 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 		_, err = jetStream.AddStream(
 			&nats.StreamConfig{
 				Name: StreamName,
-				// Subjects: []string{"test"},
 			},
 		)
 
@@ -246,27 +226,23 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 
 }
 
-func consumeWords(js nats.JetStreamContext) {
-	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
-		err := m.Ack()
+// func consumeWords(js nats.JetStreamContext) {
+// 	_, err := js.Subscribe(StreamName, func(m *nats.Msg) {
+// 		err := m.Ack()
 
-		if err != nil {
-			log.Println("Unable to Ack", err)
-			return
-		}
+// 		if err != nil {
+// 			log.Println("Unable to Ack", err)
+// 			return
+// 		}
 
-		fmt.Println(string(m.Data))
+// 		fmt.Println(string(m.Data))
 
-		log.Println("Successfully consumed")
+// 		log.Println("Successfully consumed")
 
-		//		log.Printf("Consumer  =>  Subject: %s  -  ID:%s  -  Author: %s  -  Rating:%d\n", m.Subject, review.Id, review.Author, review.Rating)
+// 	})
 
-		// send answer via JetStream using another subject if you need
-		// js.Publish(config.SubjectNameReviewAnswered, []byte(review.Id))
-	})
-
-	if err != nil {
-		log.Println("Subscribe failed")
-		return
-	}
-}
+// 	if err != nil {
+// 		log.Println("Subscribe failed")
+// 		return
+// 	}
+// }
