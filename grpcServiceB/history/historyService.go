@@ -3,26 +3,30 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
+
 	// "encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"net/http" //would uncomment
+
 	// "os/user"
 	"time"
 
 	hs "github.com/franklynobleC/dictionaryAPIGrpc/grpcServiceB/history/proto" //Service B protoFile  is  in This Directory
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime" //would uncomment
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"                        //would uncomment
+	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	// "go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type server struct {
 	hs.UnimplementedDictionaryHistoryServiceServer
-	// database *mongo.Client
+	S *mongo.Client
 }
 
 var (
@@ -39,25 +43,13 @@ type LastFromSubscribe struct {
 }
 
 func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryRequest) (*hs.DictionaryHistoryResponse, error) {
-	// log.Println("Get all Data from Database", hs.	)// err := sv.
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
+	dictionaryClient, err := ConnectMongo()
 
-	if err != nil {
-		log.Fatal("could not connect to mongo Db")
-	}
-	fmt.Print("database connected successfully")
+	fmt.Print("database created", dictionaryClient.Database())
+	fmt.Print("database created", dictionaryClient.Database())
 
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		panic(err.Error())
-	}
-
-	wordDictionary := client.Database("borderlesshq").Collection("dictionary")
-
-	fmt.Print("database created", wordDictionary.Database())
-	fmt.Print("database created", wordDictionary.Database())
-
-	cur, err := wordDictionary.Find(context.Background(), bson.D{})
+	cur, err := dictionaryClient.Find(context.Background(), bson.D{})
 
 	if err != nil {
 		log.Println("returned error from getting data", err.Error())
@@ -82,45 +74,34 @@ func (sv *server) DictionaryHistory(context.Context, *hs.DictionaryHistoryReques
 	}
 
 	fmt.Println("FROM MARSHALLING")
+
 	return &hs.DictionaryHistoryResponse{
 		Histories: list,
-
-		
 	}, nil
 
 }
 
-
-
+//subscribe NATS to a topic and write to Database
 func subScribeAndWrite() {
 
-	// 	//TODO: FOR SUBSCRIBING PUBLISHING
+	// 	//TODO: connect to Database and get Database Client
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb+srv://golangdb:testdb@cluster0.qz143pi.mongodb.net/?retryWrites=true&w=majority"))
+	wordDictionary, err := ConnectMongo()
 
 	if err != nil {
 		log.Fatal("could not connect to mongo Db")
 	}
 	fmt.Print("database connected successfully")
 
-	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		panic(err.Error())
-	}
-
-	wordDictionary := client.Database("borderlesshq").Collection("dictionary")
-
 	fmt.Print("database created", wordDictionary.Database())
 
-	//TODO: NATS FUNCTIOINS TO SUBSCRUBE
-	nc, err := nats.Connect("nats://0.0.0.0:4222")
-
+	//TODO: NATS CONNECTION
+	//subscribe to natsTopic
+	nc, err := ConnectToNats()
 	if err != nil {
-		log.Println("coudl not connect to Nats", err.Error())
+		log.Println("could not connet to nats", err)
 	}
 
-	log.Println("connected to Jetstream", nc.ConnectedAddr())
-
-	//subscribe
 	sub, err := nc.SubscribeSync(StreamName)
 
 	// nc.InMsgs
@@ -190,13 +171,9 @@ func subScribeAndWrite() {
 
 }
 
-//fmt.Println(consumeWords(jst))
-
 func main() {
 
-	//   opts := []grpc.ServerOption{}
-
-	go subScribeAndWrite()
+	// go subScribeAndWrite()
 
 	grpcMux := runtime.NewServeMux()
 
@@ -222,11 +199,55 @@ func main() {
 	}
 
 	log.Println("http Gateway Server is being Started", listener.Addr().String())
+	subScribeAndWrite()
 
 	err = http.Serve(listener, mux)
 
 	if err != nil {
 		log.Fatal("can not start grpc server", err)
+
 	}
 
+}
+
+///
+//Connet To Mongo Db and Return db Client
+func ConnectMongo() (*mongo.Collection, error) {
+
+	// Get DB data from .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Println("could not Load .env file")
+	}
+
+	opts := options.Client().ApplyURI(os.Getenv("DB_URL"))
+
+	client, err := mongo.Connect(context.TODO(), opts)
+
+	if err != nil {
+		log.Fatal("could not connect to mongo Db")
+	}
+	fmt.Print("database connected successfully FROM mongo func")
+
+	wordDictionary := client.Database(os.Getenv("DB_NAME")).Collection("dictionary")
+
+	fmt.Print("database created", wordDictionary.Database())
+
+	return wordDictionary, nil
+}
+
+func ConnectToNats() (*nats.Conn, error) {
+
+	nc, err := nats.Connect(os.Getenv("JESTREAM_URL"))
+
+	if err != nil {
+		log.Println("coudl not connect to Nats", err.Error())
+	}
+
+	log.Println("connected to Jetstream", nc.ConnectedAddr())
+
+	//subscribe
+
+	return nc, nil
 }

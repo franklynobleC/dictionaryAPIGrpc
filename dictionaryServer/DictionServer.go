@@ -58,6 +58,21 @@ func NewServer() *server {
 	return &server{}
 }
 
+func ConnectToNats() (*nats.Conn, error) {
+
+	nc, err := nats.Connect(os.Getenv("JESTREAM_URL"))
+
+	if err != nil {
+		log.Println("coudl not connect to Nats", err.Error())
+	}
+
+	log.Println("connected to Jetstream", nc.ConnectedAddr())
+
+	//subscribe
+
+	return nc, nil
+}
+
 // EnglishDictionarySearchWord, Gets a word and returns the Word  and its Meaning
 func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.EnglishDictionarySearchWordRequest) (*se.EnglishDictionarySearchWordResponse, error) {
 
@@ -133,7 +148,7 @@ func (serv *server) EnglishDictionarySearchWord(ctx context.Context, word *se.En
 
 		return &se.EnglishDictionarySearchWordResponse{
 
-			Word:   word.Word,
+			Word:    word.Word,
 			Meaning: DictionaryMap[words.GetWord()],
 		}, nil
 
@@ -181,14 +196,10 @@ func JetStreamInit() (nats.JetStreamContext, error) {
 
 	//connect to NATS
 
-	nc, err := nats.Connect("nats://0.0.0.0:4222")
-
-	if err != nil {
-		return nil, errors.New("coudl not connect to Nats")
-	}
-
-	log.Println("connected to Jetstream", nc.ConnectedAddr())
-	//create JetStream Context
+	nc, err := ConnectToNats()
+  if err != nil {
+	log.Println("could not connet to nats", err)
+  }
 
 	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
 
